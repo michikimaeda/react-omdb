@@ -1,34 +1,65 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import './App.css'
+import { useEffect, useState } from 'react';
+import './App.css';
+import Header from './components/Header';
+import Movie from './components/Movie';
+import Search from './components/Search';
+import { MovieProps } from './components/Movie';
 
-function App() {
-  const [count, setCount] = useState(0)
+const MOVIE_API_URL = 'https://www.omdbapi.com/?s=man&apikey=4a3b711b';
+
+const App: React.FC = () => {
+  const [loading, setLoading] = useState<boolean>(true);
+  const [movies, setMovies] = useState<MovieProps[]>([]);
+  const [errorMessage, setErrorMessage] = useState(null);
+
+  useEffect(() => {
+    fetch(MOVIE_API_URL)
+      .then((response) => response.json())
+      .then((jsonResponse) => {
+        setMovies(jsonResponse.Search);
+        setLoading(false);
+      });
+  }, []);
+
+  const search = (searchValue: string) => {
+    setLoading(true);
+    setErrorMessage(null);
+
+    fetch(`https://www.omdbapi.com/?s=${searchValue}&apikey=4a3b711b`)
+      .then((response) => response.json())
+      .then((jsonResponse) => {
+        if (jsonResponse.Response === 'True') {
+          setMovies(jsonResponse.Search);
+          setLoading(true);
+        } else {
+          setErrorMessage(jsonResponse.Error);
+          setLoading(false);
+        }
+      })
+      .catch((error) => {
+        setErrorMessage(error);
+        setLoading(false);
+      });
+  };
 
   return (
     <div className="App">
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+      <Header text="OMDb Demo" />
+      <Search search={search} />
+      <p className="App-intro">Sharing a few of our favorite movies</p>
+      <div className="movies">
+        {loading && !errorMessage ? (
+          <span>Loading...</span>
+        ) : errorMessage ? (
+          <div className="errorMessage">{errorMessage}</div>
+        ) : (
+          movies.map((movie, index) => (
+            <Movie key={`${index}-${movie.Title}`} {...movie} />
+          ))
+        )}
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
     </div>
-  )
-}
+  );
+};
 
-export default App
+export default App;
